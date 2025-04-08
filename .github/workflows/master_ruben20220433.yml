@@ -15,10 +15,10 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
-      
+
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: 'Resolve Project Dependencies Using Npm'
-        shell: pwsh
+        shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           npm install
@@ -37,14 +37,17 @@ jobs:
           npm run test --if-present
           popd
 
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: release.zip
 
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
     permissions:
       id-token: write #This is required for requesting the JWT
@@ -55,13 +58,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_72DA6139993843A38ED12E665456205E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_13043FAF312D4DBF8DB2D870D2F6CCDA }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1706AE7944004A1F85007C6C9D1A8087 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_581DE74C72CB4E91A43377D401A8DD15 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B75E0E08CE6C4CEFBC57DE869F8E31E5 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DFC8822E54C94AEA9640DBAFBF27E04F }}
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
